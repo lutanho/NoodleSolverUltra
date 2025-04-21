@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NOODLE SOLVER ULTRA</title>
+<style>
+th.s{font-family:'Courier New',monospace;font-size:28px;background-color:#8884;width:50px;height:50px;border-radius:50% 50%;cursor:pointer;}
+th.c{cursor:pointer;border-radius:50% 50%;font-family:'Courier New',monospace;font-size:20px;font-weight:bold;}
+td{font-family:'Courier New', monospace; font-size:20px;}
+div, span, a {font-family:'Courier New',monospace;font-size:28px;}
+input{width:60px;height:25px;padding:0px;text-align:center;font-size:17px;}
+input.s{width:30px}
+a:link {color:#000}
+a:visited {color:#000}
+a:active {color:#000}
+a:hover{color:#000}
+</style>
+<script>
+// Author: Lutz Tautenhahn, 2024, https://www.lutanho.net/
+// License: Apache License, Version 2.0
+
+function Noodle(oo,aa)
+{ this.x3y=new Int8Array(64); 
+  this.i=new Uint32Array(8); 
+  this.o=oo;
+  this.l=aa.length>>1; 
+  var ii, jj, jj2, jj3, mm, tt, xx=[], yy=[], rr=[[1,0],[0,1],[-1,0],[0,-1]]; 
+  for (jj=0; jj<this.o; jj++)
+  { jj2=jj>>2; jj3=jj<<3;
+    for (ii=0; ii<this.l; ii++)
+    { xx[jj3+ii]=rr[(jj+0+jj2)%4][0]*aa[2*ii]+rr[(jj+0+jj2)%4][1]*aa[2*ii+1];
+      yy[jj3+ii]=rr[(jj+1-jj2)%4][0]*aa[2*ii]+rr[(jj+1-jj2)%4][1]*aa[2*ii+1];
+    }
+  }
+  for (jj=0; jj<this.o; jj++)
+  { mm=999999;
+    for (ii=0; ii<this.l; ii++) { if (mm>xx[(jj<<3)+ii]) mm=xx[(jj<<3)+ii]; }
+    for (ii=0; ii<this.l; ii++) xx[(jj<<3)+ii]-=mm;
+    mm=999999;
+    for (ii=0; ii<this.l; ii++) { if ((xx[(jj<<3)+ii]==0)&&(mm>yy[(jj<<3)+ii])) mm=yy[(jj<<3)+ii]; }
+    for (ii=0; ii<this.l; ii++) yy[(jj<<3)+ii]-=mm;
+    mm=0; jj3=jj<<3;
+    for (ii=1; ii<this.l; ii++) { if ((xx[(jj<<3)+ii]==0)&&(yy[(jj<<3)+ii]==0)) mm=ii; }    
+    if (mm>0)
+    { tt=xx[jj3+0]; xx[jj3+0]=xx[jj3+mm]; xx[jj3+mm]=tt;
+      tt=yy[jj3+0]; yy[jj3+0]=yy[jj3+mm]; yy[jj3+mm]=tt;
+    }   
+  }
+  for (ii=0; ii<64; ii++) this.x3y[ii]=(xx[ii]<<3)+yy[ii];
+  for (jj=0; jj<this.o; jj++)
+  { for (ii=0; ii<this.l; ii++) this.i[jj]+=1<<(8*xx[8*jj+ii]+yy[8*jj+ii]);
+  }  
+  return(this);
+}
+
+function NoodleSolver()
+{ this.Next=new Int8Array(16);
+  this.Prev=new Int8Array(16);
+  this.IGrid=new Int8Array(128);
+  this.UGrid=new Uint32Array(16);
+  this.Noodles=[];
+  
+  this.Count=function(jj0,gg0)
+  { var gg, qqi, jj, ll, mm, mmn, mmp, pp, qq, qqo, nnxt=this.Next, pprv=this.Prev; 
+    jj=jj0; gg=gg0;
+    while (gg&1)
+    { gg>>=1;
+      jj++;
+      if (jj%8==5) 
+      { jj+=3;   
+        if (jj>80) { this.SolutionCounter++; return(0); }
+        gg>>=3;
+        gg|=this.UGrid[jj>>3];
+      }
+    }
+    mm=nnxt[0];
+    while(mm<13)
+    { qq=this.Noodles[mm-1];
+      qqo=qq.o;
+      mmn=nnxt[mm];
+      mmp=pprv[mm];
+      pprv[mmn]=mmp;
+      nnxt[mmp]=mmn;
+      for (pp=0; (pp<qqo); pp++)
+      { if ((gg&(qqi=qq.i[pp]))>0) continue;
+        if (this.Count(jj,gg|qqi)) return(1);
+      }      
+      nnxt[mmp]=pprv[mmn]=mm;
+      mm=mmn;
+    }
+    return(0);
+  };
+  
+  this.SolveN=function(jj0,gg0,nn)
+  { var gg, qqi, jj, ll, mm, mmn, mmp, pp, qq, qql, qqo, xx3y, nnxt=this.Next, pprv=this.Prev; 
+    jj=jj0; gg=gg0;
+    while (gg&1)
+    { gg>>=1;
+      jj++;
+      if (jj%8==5) 
+      { jj+=3; 
+        if (jj>80) 
+        { this.SolutionCounter++;
+          if (this.SolutionCounter>nn) return(1);
+          return(0);
+        }
+        gg>>=3;
+        gg|=this.UGrid[jj>>3];
+      }
+    }
+    mm=nnxt[0];
+    while(mm<13)
+    { qq=this.Noodles[mm-1];
+      qqo=qq.o;
+      qql=qq.l;
+      mmn=nnxt[mm];
+      mmp=pprv[mm];
+      pprv[mmn]=mmp;
+      nnxt[mmp]=mmn;
+      for (pp=0; (pp<qqo); pp++)
+      { if ((gg&(qqi=qq.i[pp]))>0) continue;
+        if (this.SolveN(jj,gg|qqi,nn))       
+        { pp<<=3; xx3y=qq.x3y;
+          for (ll=0; (ll<qql); ll++) this.IGrid[xx3y[pp+ll]+jj]=mm;
+          return(1); 
+        }
+      }      
+      nnxt[mmp]=pprv[mmn]=mm;
+      mm=mmn;
+    }
+    return(0);
+  };
+  
+  this.NoodleSymOps=new Int8Array(16);//12  
+  this.NoodleRank=new Int8Array(16);//12
+  this.NoodleOrder=new Int8Array(16);//12
+  this.SymOps8Order=new Int8Array(16);//8
+  this.SymOps4Order=new Int8Array(16);//4  
+
+  this.SolveR=function(jj0,gg0)
+  { var gg, qqi, jj, ll, mm, mmn, mmp, oo, pp, qq, qql, qqo, xx3y, nnxt=this.Next, pprv=this.Prev; 
+    jj=jj0; gg=gg0;
+    while (gg&1)
+    { gg>>=1;
+      jj++;
+      if (jj%8==5) 
+      { jj+=3; 
+        if (jj>80) 
+        { this.SolutionCounter++;
+          return(1);
+        }
+        gg>>=3;
+        gg|=this.UGrid[jj>>3];
+      }
+    }
+    mm=nnxt[0];
+    while(mm<13)
+    { qq=this.Noodles[mm-1];
+      qqo=qq.o;
+      qql=qq.l;
+      mmn=nnxt[mm];
+      mmp=pprv[mm];
+      pprv[mmn]=mmp;
+      nnxt[mmp]=mmn;
+      for (pp=0; (pp<qqo); pp++)
+      { oo=pp;
+        if (qqo==4) oo=this.SymOps4Order[pp];
+        if (qqo==8) oo=this.SymOps8Order[pp];
+        if ((gg&(qqi=qq.i[oo]))>0) continue;
+        if (this.SolveR(jj,gg|qqi))       
+        { oo<<=3; xx3y=qq.x3y;
+          for (ll=0; (ll<qql); ll++) this.IGrid[xx3y[oo+ll]+jj]=mm;
+          return(1); 
+        }
+      }      
+      nnxt[mmp]=pprv[mmn]=mm;
+      mm=mmn;
+    }
+    return(0);
+  };  
+
+  this.Solve=function(nn)
+  { var ee, rr, ss=new Date();
+    if (nn==999999) rr=this.Count(0,this.UGrid[0]);
+    else
+    { if (nn==-1) rr=this.SolveR(0,this.UGrid[0]);
+      else rr=this.SolveN(0,this.UGrid[0],nn);
+    } 
+    ee=new Date();
+    this.Solutions="#"+this.SolutionCounter+":<br>"+(ee-ss)+" ms";
+    return(rr);   
+  }
+
+  this.Solutions="";
+  this.SolutionCounter=0;  
+  
+  this.Init=function(tt,rr)
+  { var ii, jj, kk, nn, ss="-ABCDEFGHIJKL-abcdefghijkl", aa=tt.split(",");
+    var oo=this.NoodleOrder;    
+    this.Solutions="";
+    this.SolutionCounter=0; 
+    this.InitArray(this.SymOps8Order,0,8,rr);
+    this.InitArray(this.SymOps4Order,0,4,rr); 
+    this.InitArray(oo,0,12,rr);
+    for (ii=0; ii<12; ii++) this.NoodleRank[oo[ii]]=ii;
+                       //A,B,C;D;E;F;G,H;I;J,K,L       
+    //this.NoodleSymOps=[8,8,8,8,8,4,4,4,4,2,1,1]; 
+    for (ii=0; ii<5; ii++) this.NoodleSymOps[oo[ii]]=8;
+    for (ii=5; ii<9; ii++) this.NoodleSymOps[oo[ii]]=4;
+    for (ii=9; ii<10; ii++) this.NoodleSymOps[oo[ii]]=2;
+    for (ii=10; ii<12; ii++) this.NoodleSymOps[oo[ii]]=1;    
+    this.Noodles[oo[0]]= new Noodle(8,[0,0,1,0,2,0,0,1]);    //A
+    this.Noodles[oo[1]]= new Noodle(8,[0,0,1,0,2,0,0,1,1,1]);//B
+    this.Noodles[oo[2]]= new Noodle(8,[0,0,1,0,2,0,3,0,0,1]);//C
+    this.Noodles[oo[3]]= new Noodle(8,[0,0,1,0,2,0,3,0,1,1]);//D
+    this.Noodles[oo[4]]= new Noodle(8,[0,0,1,0,2,0,2,1,3,1]);//E
+    this.Noodles[oo[5]]= new Noodle(4,[0,0,1,0,0,1]);        //F
+    this.Noodles[oo[6]]= new Noodle(4,[0,0,1,0,2,0,0,1,0,2]);//G
+    this.Noodles[oo[7]]= new Noodle(4,[0,0,1,0,1,1,2,1,2,2]);//H
+    this.Noodles[oo[8]]= new Noodle(4,[0,0,1,0,2,0,0,1,2,1]);//I
+    this.Noodles[oo[9]]= new Noodle(2,[0,0,1,0,2,0,3,0]);    //J
+    this.Noodles[oo[10]]=new Noodle(1,[0,0,1,0,0,1,1,1]);    //K
+    this.Noodles[oo[11]]=new Noodle(1,[1,0,0,1,1,1,2,1,1,2]);//L      
+    for (ii=0; ii<16; ii++) this.Next[ii]=ii+1;
+    for (ii=0; ii<16; ii++) this.Prev[ii]=ii-1;    
+    if (aa.length!=5) return(0);
+    for (jj=0; jj<5; jj++)
+    { if (aa[jj].length!=11) return(0);
+    }
+    for (jj=0; jj<128; jj++) this.IGrid[jj]=1;
+    for (jj=0; jj<5; jj++)
+    { for (ii=0; ii<11; ii++)
+      { nn=ss.indexOf(aa[jj].charAt(ii));
+        if (nn<=0) this.IGrid[(ii<<3)+jj]=0;
+        else
+        { this.IGrid[(ii<<3)+jj]=oo[nn%13-1]+1;
+          if(nn>0)
+          { nn=oo[nn%13-1]+1;
+            if (this.Prev[this.Next[nn]]==nn) this.Prev[this.Next[nn]]=this.Prev[nn];
+            if (this.Next[this.Prev[nn]]==nn) this.Next[this.Prev[nn]]=this.Next[nn];
+          }
+        }
+      }
+    } 
+    for (ii=0; ii<9; ii++) this.UGrid[ii]=551608544;   
+    for (ii=9; ii<11; ii++) this.UGrid[ii]=16711680;
+    for (ii=0; ii<11; ii++)
+    { kk=1;
+      for (jj=0; jj<31; jj++)
+      { if ((jj%8<5)&&(this.IGrid[ii*8+jj]>0)) this.UGrid[ii]+=kk;
+        kk*=2;
+      }
+    }
+    return(1);
+  }; 
+  this.InitArray=function(aa,ss,ll,rr)
+  { var ii, jj, nn;
+    for (nn=ss; nn<ss+ll; nn++) aa[nn]=nn;
+    if (rr>=0) return;
+    for (nn=0; nn<2*ll; nn++)
+    { ii=~~(Math.random()*ll);
+      jj=aa[ss+nn%ll];
+      aa[ss+nn%ll]=aa[ss+ii];
+      aa[ss+ii]=jj;
+    }
+  };    
+  return(this);
+}
+
+var Color=0, wasChanged=1, Letters="-ABCDEFGHIJKL-abcdefghijkl";
+var Colors=["#8882","#d60","#d32","#44d","#d88","#063","#bbb","#2bb","#d36","#cc3","#648","#6d2","#888"];
+var Grid=[[],[],[],[],[],[],[],[],[],[],[]], RGrid=[[],[],[],[],[],[],[],[],[],[],[]];
+
+function setColor(nn)
+{ Color=nn;
+}
+function Click(ii,jj)
+{ el("c_"+ii+"_"+jj).style.backgroundColor=Colors[Color];
+  el("c_"+ii+"_"+jj).innerHTML=Letters.charAt(Color);
+  Grid[ii][jj]=Color;
+  wasChanged=1; 
+}
+function ChangeSolNum(dd)
+{ var nn=parseInt(el('solnum').value);
+  if ((nn>=0)&&(nn<=999999));
+  else nn=0;
+  if ((nn+dd>=0)&&(nn+dd<=999999)) nn+=dd;
+  el('solnum').value=nn;
+}
+function StartSolve(nn)
+{ if (nn<0) el('result').innerHTML="solving...";
+  else el('result').innerHTML="counting...";
+  el('reset').disabled=true;
+  el('solve').disabled=true;
+  el('count').disabled=true;  
+  el('clear').disabled=true;
+  UpdLink()
+  setTimeout("Solve("+nn+")",20);
+}
+function Solve(mm)
+{ var ii, jj, rr, tt="", nn, oo;
+  if (wasChanged==0) Reset();
+  nn=parseInt(el('solnum').value);
+  if ((nn>=0)&&(nn<=999999));
+  else nn=0;
+  el('solnum').value=nn;
+  nn--;
+  if (nn<mm) nn=mm;
+  for (jj=0; jj<5; jj++)
+  { for (ii=0; ii<11; ii++) RGrid[ii][jj]=Grid[ii][jj];
+  } 
+  for (jj=0; jj<5; jj++)
+  { if(jj>0) tt+=",";
+    for (ii=0; ii<11; ii++)
+    { tt+=Letters.charAt(Grid[ii][jj]);
+    }
+  }
+  var ss=new NoodleSolver();
+  if (ss.Init(tt,nn))
+  { rr=ss.Solve(nn);
+    if (rr) 
+    { for (jj=0; jj<5; jj++)
+      { for (ii=0; ii<11; ii++)
+        { oo=ss.IGrid[(ii<<3)+jj];
+          if (oo>0) oo=ss.NoodleRank[oo-1]+1;
+          Grid[ii][jj]=oo;
+          el("c_"+ii+"_"+jj).style.backgroundColor=Colors[Grid[ii][jj]];
+          el("c_"+ii+"_"+jj).innerHTML=Letters.charAt(Grid[ii][jj]);
+        }
+      }
+      if (nn<0) el('result').innerHTML="solved :-)"; 
+      else el('result').innerHTML="#"+(nn+1)+" solved :-)"; 
+    }
+    else
+    { if (nn<0) el('result').innerHTML="no solution found :-(";
+      else el('result').innerHTML="solution #"+(nn+1)+" not found :-(";
+    }
+    if (mm==999999)
+    { if (ss.SolutionCounter>999999) el('result').innerHTML="more than 999999 solutions found";
+      else 
+      { if(ss.SolutionCounter==1) el('result').innerHTML=ss.SolutionCounter+" solution found";
+        else el('result').innerHTML=ss.SolutionCounter+" solutions found";        
+      }
+    }
+    el('solutions').innerHTML=ss.Solutions;
+  }
+  else el('result').innerHTML="invalid input data :-(";
+  wasChanged=0;
+  setTimeout("EnableButtons()",10);
+}
+function EnableButtons()
+{ el('reset').disabled=false;
+  el('solve').disabled=false;
+  el('count').disabled=false;
+  el('clear').disabled=false;
+}
+function Clear()
+{ var ii, jj;
+  for (jj=0; jj<5; jj++)
+  { for (ii=0; ii<11; ii++)
+    { Grid[ii][jj]=0;
+      el("c_"+ii+"_"+jj).style.backgroundColor=Colors[Grid[ii][jj]];
+      el("c_"+ii+"_"+jj).innerHTML=Letters.charAt(Grid[ii][jj]);
+    }
+  }
+  el('result').innerHTML="";
+  el('solutions').innerHTML="";
+  wasChanged=1;
+}
+function Reset()
+{ var ii, jj;
+  for (jj=0; jj<5; jj++)
+  { for (ii=0; ii<11; ii++)
+    { Grid[ii][jj]=RGrid[ii][jj];
+      el("c_"+ii+"_"+jj).style.backgroundColor=Colors[Grid[ii][jj]];
+      el("c_"+ii+"_"+jj).innerHTML=Letters.charAt(Grid[ii][jj]);
+    }
+  }
+  el('result').innerHTML="";
+  wasChanged=1; 
+}
+function UpdLink()
+{ var ii, jj, ss="";
+  for (jj=0; jj<5; jj++) 
+  { ss+=",";
+    for (ii=0; ii<11; ii++) ss+=Letters.charAt(Grid[ii][jj]);
+  }
+  ss=window.location.href.split("?")[0]+"?n="+ss.substr(1);
+  el('noodle').innerHTML="<a target=_blank href='"+ss+"'>NOODLE SOLVER ULTRA</a>";
+}
+function Init()
+{ var aa, ii, jj, tt;
+  for (jj=0; jj<5; jj++)
+  { for (ii=0; ii<11; ii++)
+    { Grid[ii][jj]=0; 
+      RGrid[ii][jj]=0;
+    }
+  }
+  if (window.location.search.indexOf("n=")>=0)
+  { aa=window.location.search.split("=")[1].split(",");
+    for (jj=0; ((jj<5)&&(jj<aa.length)); jj++)
+    { for (ii=0;((ii<11)&&(ii<aa[jj].length)); ii++)
+      { tt=Letters.indexOf(aa[jj][ii]);
+        if (tt>=0) 
+        { Grid[ii][jj]=tt%13; 
+          RGrid[ii][jj]=tt%13;
+        }
+      }
+    }  
+  }
+  tt="<table border=1 cellpadding=3 cellspacing=6><tr>"
+  for (ii=0; ii<Colors.length; ii++) 
+    tt+="<th class=c style='background-color:"+Colors[ii]+"' onclick='setColor("+ii+")'>&nbsp;"+Letters.charAt(ii)+"&nbsp;</th>";
+  tt+="</tr></table><br>";    
+  tt+="<table border=1 cellpadding=0 cellspacing=7>"
+  for (jj=0; jj<5; jj++)
+  { tt+="<tr>";
+    for (ii=0; ii<11; ii++) 
+      tt+="<th class=s style='background-color:"+Colors[Grid[ii][jj]]+"' id='c_"+ii+"_"+jj+"' onclick='Click("+ii+","+jj+")'>"+Letters.charAt(Grid[ii][jj])+"</th>";
+    tt+="</tr>";
+  }
+  tt+="</table>";
+  el('grid').innerHTML=tt;
+}
+function el(ii)
+{ return(document.getElementById(ii));
+} 
+</script>
+</head>
+<body onload='Init()'>
+<div align=center>><span id='noodle'>NOODLE SOLVER ULTRA</span><
+<table border=0 cellpadding=0 cellspacing=12 align=center><tr><td style='width:120px'></td><td style='text-align:center'>
+<div id='grid' align=center></div>
+<table border=0 cellpadding=4 cellspacing=4 align=center><tr>
+<td>><input type='button' id='reset' value='Reset' onclick='Reset()'><</td>
+<td>><input type='button' id='solve' value='Solve' onclick='StartSolve(-1)'><</td>
+<td>><input type='button' id='count' value='Count' onclick='StartSolve(999999)'><</td>
+<td>><input type='button' id='clear' value='Clear' onclick='Clear()'><</td>
+</tr><tr>
+<td colspan=4 nowrap>solution#<input id='solnum' value='0' maxlength=5 size=5><input type='button' class='s' value='+' onclick='ChangeSolNum(1)'><input type='button' class='s' value='-' onclick='ChangeSolNum(-1)'></td>
+</tr></table>
+<div id='result' align=center></div>
+</td><td style='width:150px;vertical-align:top' nowrap><div id='solutions' style='font-size:16px;width:150px;height:369px;overflow:auto'></div></td></tr></table>
+</div>
+</body>
+</html>
