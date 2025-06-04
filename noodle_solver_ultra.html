@@ -184,14 +184,15 @@ function NoodleSolver()
     else
     { if (nn==-1) rr=this.SolveR(0,this.UGrid[0]);
       else rr=this.SolveN(0,this.UGrid[0],nn);
-    } 
+    }
+    this.CheckFlip(0);
     ee=new Date();
     this.Solutions="#"+this.SolutionCounter+":<br>"+(ee-ss)+" ms";
     return(rr);   
-  }
+  };
 
   this.Solutions="";
-  this.SolutionCounter=0;  
+  this.SolutionCounter=0;
   
   this.Init=function(tt,rr)
   { var ii, jj, kk, nn, ss="-ABCDEFGHIJKL-abcdefghijkl", aa=tt.split(",");
@@ -240,7 +241,8 @@ function NoodleSolver()
           }
         }
       }
-    } 
+    }
+    this.CheckFlip(1);
     for (ii=0; ii<9; ii++) this.UGrid[ii]=551608544;   
     for (ii=9; ii<11; ii++) this.UGrid[ii]=16711680;
     for (ii=0; ii<11; ii++)
@@ -262,7 +264,28 @@ function NoodleSolver()
       aa[ss+nn%ll]=aa[ss+ii];
       aa[ss+ii]=jj;
     }
-  };    
+  };  
+  this.Flip=0;
+  this.CheckFlip=function(bb)
+  { var ii, jj, nn=0;
+    if (bb)
+    { for (ii=0; ii<11; ii++) 
+      { for (jj=0; jj<5; jj++)
+        { if (this.IGrid[(ii<<3)+jj]) nn+=(ii<<3)+jj-42;
+        }
+      }
+      this.Flip=nn;
+    }
+    if (this.Flip>0)
+    { for (ii=0; ii<5; ii++)
+      { for (jj=0; jj<5; jj++)
+        { nn=this.IGrid[(ii<<3)+jj];
+          this.IGrid[(ii<<3)+jj]=this.IGrid[((10-ii)<<3)+jj];
+          this.IGrid[((10-ii)<<3)+jj]=nn;
+        }
+      }
+    }
+  };  
   return(this);
 }
 
